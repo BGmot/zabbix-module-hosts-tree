@@ -1,0 +1,21 @@
+{
+    "manifest_version": 1.0,
+    "id": "bghosts",
+    "name": "Groups/Hosts tree",
+    "version": "1.0",
+    "namespace": "BGmotHosts",
+    "author": "Evgeny Yurchenko",
+    "url": "https://bgmot.com",
+    "description": "Show groups/hosts as a tree under Monitoring -> Hosts Tree menu item",
+    "actions": {
+        "bghost.view": {
+            "class": "CControllerBGHostView",
+            "view": "module.monitoring.bghost.view"
+        },
+        "bghost.view.refresh": {
+            "class": "CControllerBGHostViewRefresh",
+            "view": "module.monitoring.bghost.view.refresh",
+            "layout": "layout.json"
+        }
+    }
+}
