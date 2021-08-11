@@ -269,49 +269,10 @@ abstract class CControllerBGHost extends CController {
 					$host_groups[$groupname_full]['hosts'][] = $host['hostid'];
 				}
 
-				// Find parent group
 				$grp_arr = explode('/', $groupname_full);
-				$arr_len = count($grp_arr);
-				if ($arr_len > 1) {
-					// There is a '/' in group name
-					unset($grp_arr[$arr_len-1]); // Remove last element
-					$parent_group_name = implode('/', $grp_arr);
-					// In Zabbix it is possible to have parent name that does not exist
-					// e.g.: group '/level0/level1/level2' exists but '/level0/level1' does not
-					if (array_key_exists($parent_group_name, $host_groups)) {
-						// Parent group exists
-						if (!in_array($groupname_full, $host_groups[$parent_group_name]['children'])) {
-							$host_groups[$parent_group_name]['children'][] = $groupname_full;
-						}
-					} else {
-						// Parent group does not exist or does not have any hosts to show
-						$grps = API::HostGroup()->get([
-							'output' => ['groupid'],
-							'search' => ['name' => $parent_group_name],
-							'filter' => ['name' => $parent_group_name]
-						]);
-						if (count($grps) > 0) {
-							// Group exists in DB
-							$host_groups[$parent_group_name] = [
-								'groupid' => $grps[0]['groupid'],
-								'hosts' => [],
-								'children' => [$groupname_full],
-								'parent_group_name' => '',
-								'is_collapsed' => true
-							];
-						} else {
-							// Group does not exist in DB
-							$host_groups[$parent_group_name] = [
-								'groupid' => $fake_group_id++,
-								'hosts' => [],
-								'children' => [$groupname_full],
-								'parent_group_name' => '',
-								'is_collapsed' => true
-							];
-
-						}
-					}
-					$host_groups[$groupname_full]['parent_group_name'] = $parent_group_name;
+				if (count($grp_arr) > 1) {
+					// Find all parent groups
+					$this->add_parent($host_groups, $fake_group_id, $groupname_full);
 				}
 			}
 		}
@@ -340,6 +301,62 @@ abstract class CControllerBGHost extends CController {
                         'host_groups' => $host_groups,
 			'maintenances' => $maintenances
 		];
+	}
+
+	/**
+	 * Adds parent group
+	 *
+	 * @param array $host_groups      All the groups to be shown in hierarchy
+	 * @param int   $fake_group_id    ID for groups that do not exist in Zabbix DB (autoincremented)
+	 * @param string $groupname_full  Group name parent group of which needs to be added
+	 *
+	 * @return array $host_groups modified in-place
+	 */
+	protected function add_parent(&$host_groups, &$fake_group_id, $groupname_full) {
+		// There is a '/' in group name
+		$grp_arr = explode('/', $groupname_full);
+		unset($grp_arr[count($grp_arr)-1]); // Remove last element
+		$parent_group_name = implode('/', $grp_arr);
+		// In Zabbix it is possible to have parent name that does not exist
+		// e.g.: group '/level0/level1/level2' exists but '/level0/level1' does not
+		if (array_key_exists($parent_group_name, $host_groups)) {
+			// Parent group exists
+			if (!in_array($groupname_full, $host_groups[$parent_group_name]['children'])) {
+				$host_groups[$parent_group_name]['children'][] = $groupname_full;
+			}
+		} else {
+			// Parent group does not exist or does not have any hosts to show
+			$grps = API::HostGroup()->get([
+				'output' => ['groupid'],
+				'search' => ['name' => $parent_group_name],
+				'filter' => ['name' => $parent_group_name]
+			]);
+			if (count($grps) > 0) {
+				// Group exists in DB
+				$host_groups[$parent_group_name] = [
+					'groupid' => $grps[0]['groupid'],
+					'hosts' => [],
+					'children' => [$groupname_full],
+					'parent_group_name' => '',
+					'is_collapsed' => true
+				];
+			} else {
+				// Group does not exist in DB
+				$host_groups[$parent_group_name] = [
+					'groupid' => $fake_group_id++,
+					'hosts' => [],
+					'children' => [$groupname_full],
+					'parent_group_name' => '',
+					'is_collapsed' => true
+				];
+				}
+		}
+		$host_groups[$groupname_full]['parent_group_name'] = $parent_group_name;
+		$parent_group_name_arr = explode('/', $parent_group_name);
+		if (count($parent_group_name_arr) > 1) {
+			// Parent group also has parent
+			$this->add_parent($host_groups, $fake_group_id, $parent_group_name);
+		}
 	}
 
 	/**
