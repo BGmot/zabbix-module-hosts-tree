@@ -204,6 +204,7 @@ abstract class CControllerBGHost extends CController {
 		}
 
 		$host_groups = []; // Information about all groups to build a tree
+		$fake_group_id = 10000;
 
 		foreach ($hosts as &$host) {
 			// Count number of dashboards for each host.
@@ -250,7 +251,6 @@ abstract class CControllerBGHost extends CController {
 			}
 
 			$host['tags'] = $tags;
-			$fake_group_id = 10000;
 
 			foreach ($host['groups'] as $group) {
 				$groupid = $group['groupid'];
