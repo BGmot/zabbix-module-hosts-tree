@@ -155,7 +155,7 @@ abstract class CControllerBGHost extends CController {
 		// Sort for paging so we know which IDs go to which page.
 		CArrayHelper::sort($hosts, [['field' => $filter['sort'], 'order' => $filter['sortorder']]]);
 
-		$view_curl = (new CUrl())->setArgument('action', 'host.view');
+		$view_curl = (new CUrl())->setArgument('action', 'bghost.view');
 
 		// Split result array and create paging.
 		$paging = CPagerHelper::paginate($filter['page'], $hosts, $filter['sortorder'], $view_curl);
@@ -295,6 +295,7 @@ abstract class CControllerBGHost extends CController {
 		}
 		unset($host);
 
+sdff($paging);
 		return [
 			'paging' => $paging,
 			'hosts' => $hosts,
