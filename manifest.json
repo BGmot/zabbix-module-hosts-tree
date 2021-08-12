@@ -2,7 +2,7 @@
     "manifest_version": 1.0,
     "id": "bghosts",
     "name": "Groups/Hosts tree",
-    "version": "1.0.3",
+    "version": "1.0.2",
     "namespace": "BGmotHosts",
     "author": "Evgeny Yurchenko",
     "url": "https://bgmot.com",
