@@ -8,5 +8,5 @@ A Zabbix module to show groups/hosts as a tree under Monitoring -> Hosts Tree me
 1) Create a folder in your Zabbix server modules folder (by default /usr/share/zabbix/) and copy contents of this repository into that folder.
 2) Go to Administration -> General -> Modules click Scan directory and enable the module. You should get new 'Hosts tree' menu item under Monitoring.
 
-## Author
-Evgeny Yurchenko
+## Authors
+See [Contributors](https://github.com/BGmot/zabbix-module-hosts-tree/graphs/contributors)
