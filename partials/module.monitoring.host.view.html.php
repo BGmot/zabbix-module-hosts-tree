@@ -31,7 +31,8 @@ $table->setHeader([
 	(new CColHeader(_('Interface'))),
 	(new CColHeader(_('Availability'))),
 	(new CColHeader(_('Tags'))),
-	(new CColHeader(_('Problems'))),
+	//fix: problems renamed to triggers to distinguish from the problems counter column
+	(new CColHeader(_('Triggers'))),
 	make_sorting_header(_('Status'), 'status', $data['sort'], $data['sortorder'], $view_url),
 	(new CColHeader(_('Latest data'))),
 	(new CColHeader(_('Problems'))),
@@ -44,7 +45,14 @@ $table->setHeader([
 foreach ($data['host_groups'] as $group_name => $group) {
 	if ($group['parent_group_name'] == '') {
 		// Add only top level groups, children will be added recursively in addGroupRow()
-		addGroupRow($data, $table, $group_name, '', 0);
+							  
+		$child_stat = array('hosts_count'=>0, 'groups_count'=>0, 'severity'=>[]);
+		$rows = [];
+		addGroupRow($data, $rows, $group_name, '', 0, $child_stat);
+				
+		foreach ($rows as $idx=>$row) {
+			$table->addRow($row);
+		}
 	}
 }
 
@@ -52,35 +60,23 @@ $form->addItem([$table,	$data['paging']]);
 
 echo $form;
 
-function addGroupRow($data, &$table, $group_name, $parent_group_name, $level) {
+//added child stat as a parameter to display group's totals
+//child stat is a severeties and total count array
+//it's expected that function will retrun stats as summ of both of it's subgroups and own hosts
+//to recursively count the numbers
+
+//also, due to group and host counting is done during recursive calls and we need
+//group summary information before renedering the group and it's subgroups and 
+//hosts, so the function saves generatied rows to an intermediate array 
+//and then afte having summaries, the array is copied to a "global" array
+//which rendered to the table in level 0
+function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$child_stat) {
 	$interface_types = [INTERFACE_TYPE_AGENT, INTERFACE_TYPE_SNMP, INTERFACE_TYPE_JMX, INTERFACE_TYPE_IPMI];
+	$my_stat = array('hosts_count'=>0, 'groups_count'=>0, 'severity'=>[]);
+	
 	$group = $data['host_groups'][$group_name];
 
-	$is_collapsed = $data['host_groups'][$group_name]['is_collapsed'];
-	$toggle_tag = (new CSimpleButton())
-		->addClass(ZBX_STYLE_TREEVIEW)
-		->addClass('js-toggle')
-		->addItem(
-			(new CSpan())->addClass($is_collapsed ? ZBX_STYLE_ARROW_RIGHT : ZBX_STYLE_ARROW_DOWN)
-	);
-	$toggle_tag->setAttribute(
-		'data-group_id_'.$data['host_groups'][$group_name]['groupid'],
-		$data['host_groups'][$group_name]['groupid']
-	);
-	$group_name_arr = explode('/', $group_name);
-        $group_name_short = end($group_name_arr);
-	$table_row = new CRow([
-		(new CCol())
-			-> setColSpan(11)
-			-> addItem(str_repeat('&nbsp;', $level*5))
-			-> addItem($toggle_tag)
-			-> addItem(bold($group_name_short))
-	]);
-
-	addParentGroupClass($data, $table_row, $parent_group_name);
-
-	$table->addRow($table_row);
-
+	$host_rows = [];
 	foreach ($group['hosts'] as $hostid) {
 		$host = $data['hosts'][$hostid];
 		$host_name = (new CLinkAction($host['name']))->setMenuPopup(CMenuPopupHelper::getHost($hostid));
@@ -99,15 +95,19 @@ function addGroupRow($data, &$table, $group_name, $parent_group_name, $level) {
 		}
 
 		$problems_div = (new CDiv())->addClass(ZBX_STYLE_PROBLEM_ICON_LIST);
-
 		$total_problem_count = 0;
-
+		
 		// Fill the severity icons by problem count and style, and calculate the total number of problems.
+		//need this to have cosntant order of triggers from disater to information
+		krsort($host['problem_count'],true);
+		
 		foreach ($host['problem_count'] as $severity => $count) {
 			if (($count > 0 && $data['filter']['severities'] && in_array($severity, $data['filter']['severities']))
 					|| (!$data['filter']['severities'] && $count > 0)) {
 				$total_problem_count += $count;
-
+				isset ($my_stat['severity'][$severity]) ? $my_stat['severity'][$severity] += $count:
+											  $my_stat['severity'][$severity] = $count;
+				
 				$problems_div->addItem((new CSpan($count))
 					->addClass(ZBX_STYLE_PROBLEM_ICON_LIST_ITEM)
 					->addClass(getSeverityStatusStyle($severity))
@@ -134,7 +134,8 @@ function addGroupRow($data, &$table, $group_name, $parent_group_name, $level) {
 
 		$table_row_host = new CRow([
 			(new CCol())
-				-> addItem(str_repeat('&nbsp;', 5 + $level*5))
+				//added a little bit of span to make the leveling prettier
+				-> addItem(str_repeat('&nbsp;', 10 + $level*5))
 				-> addItem($host_name)
 				-> addItem($maintenance_icon),
 			//[$host_name, $maintenance_icon],
@@ -202,14 +203,94 @@ function addGroupRow($data, &$table, $group_name, $parent_group_name, $level) {
 		]);
 
 		addParentGroupClass($data, $table_row_host, $group_name);
-
-		$table->addRow($table_row_host);
+		$host_rows[] = $table_row_host;
+	
 	}
 
+	$subgroup_rows=[];
+	
 	foreach ($data['host_groups'][$group_name]['children'] as $child_group_name) {
-		addGroupRow($data, $table, $child_group_name, $group_name, $level + 1);
+		addGroupRow($data, $subgroup_rows, $child_group_name, $group_name, $level + 1, $my_stat);
 	}
 
+
+	$is_collapsed = $data['host_groups'][$group_name]['is_collapsed'];
+	$toggle_tag = (new CSimpleButton())
+		->addClass(ZBX_STYLE_TREEVIEW)
+		->addClass('js-toggle')
+		->addItem(
+			(new CSpan())->addClass($is_collapsed ? ZBX_STYLE_ARROW_RIGHT : ZBX_STYLE_ARROW_DOWN)
+	);
+	$toggle_tag->setAttribute(
+		'data-group_id_'.$data['host_groups'][$group_name]['groupid'],
+		$data['host_groups'][$group_name]['groupid']
+	);
+	
+	//counting hosts/groups totals
+	$hosts_count = count($data['host_groups'][$group_name]['hosts']);
+	$groups_count = count($data['host_groups'][$group_name]['hosts']);
+
+	isset($my_stat['hosts_count']) 
+		? $my_stat['hosts_count'] += $hosts_count
+		: $my_stat['hosts_count'] = $hosts_count;
+	
+	isset($my_stat['groups_count'])
+		? $my_stat['groups_count'] += $groups_count 
+		: $my_stat['groups_count'] = $groups_count;
+	
+	$group_name_arr = explode('/', $group_name);
+    $group_name_short = end($group_name_arr) .
+			'(' . $my_stat['hosts_count']. ')';
+	
+	$group_problems_div = (new CDiv())->addClass(ZBX_STYLE_PROBLEM_ICON_LIST);
+			
+	//now we have all the stats, genarating own row
+	//to make things look nice making a sorted severities array
+	krsort($my_stat['severity']);
+
+	foreach ($my_stat['severity'] as $severity => $count) {
+		$group_problems_div->addItem((new CSpan($count))
+			->addClass(ZBX_STYLE_PROBLEM_ICON_LIST_ITEM)
+			->addClass(getSeverityStatusStyle($severity))
+			->setAttribute('title', getSeverityName($severity))
+		);
+	}
+	
+	$table_row = new CRow([
+		(new CCol())
+			-> setColSpan(4)
+			-> addItem(str_repeat('&nbsp;', $level*5))
+			-> addItem($toggle_tag)
+			-> addItem(bold($group_name_short)),
+			$group_problems_div,
+		(new CCol())
+			-> setColSpan(7)
+	]);
+
+	//we don't render here, but just add rows to the array
+	addParentGroupClass($data, $table_row, $parent_group_name);
+	
+	$rows[] = $table_row;
+	
+	//now all subgroup rows
+	foreach ($subgroup_rows as $idx=>$row) {
+		$rows[] = $row;
+	}
+	
+	//and finally,  the host's rows
+	foreach ($host_rows as $idx=>$row) {
+		$rows[] = $row;
+	}
+	
+	//adding own statistics to the $child_stat
+	foreach ($my_stat['severity'] as $severity => $count) {
+		isset($child_stat['severity'][$severity])
+				? $child_stat['severity'][$severity] += $count
+				: $child_stat['severity'][$severity] = $count;
+	}
+	
+	$child_stat['hosts_count'] += $my_stat['hosts_count'];
+	
 }
 
 // Adds class 'data-group_id_<group_id>=<group_id>' to $element
