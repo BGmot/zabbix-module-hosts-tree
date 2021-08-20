@@ -272,7 +272,7 @@ abstract class CControllerBGHost extends CController {
 				$grp_arr = explode('/', $groupname_full);
 				if (count($grp_arr) > 1) {
 					// Find all parent groups
-					$this->add_parent($host_groups, $fake_group_id, $groupname_full);
+					$this->add_parent($host_groups, $fake_group_id, $groupname_full, $filter);
 				}
 			}
 		}
@@ -295,7 +295,6 @@ abstract class CControllerBGHost extends CController {
 		}
 		unset($host);
 
-sdff($paging);
 		return [
 			'paging' => $paging,
 			'hosts' => $hosts,
@@ -310,10 +309,11 @@ sdff($paging);
 	 * @param array $host_groups      All the groups to be shown in hierarchy
 	 * @param int   $fake_group_id    ID for groups that do not exist in Zabbix DB (autoincremented)
 	 * @param string $groupname_full  Group name parent group of which needs to be added
+	 * @param array  $filter          Filter options.
 	 *
 	 * @return array $host_groups modified in-place
 	 */
-	protected function add_parent(&$host_groups, &$fake_group_id, $groupname_full) {
+	protected function add_parent(&$host_groups, &$fake_group_id, $groupname_full, $filter) {
 		// There is a '/' in group name
 		$grp_arr = explode('/', $groupname_full);
 		unset($grp_arr[count($grp_arr)-1]); // Remove last element
@@ -356,7 +356,12 @@ sdff($paging);
 		$parent_group_name_arr = explode('/', $parent_group_name);
 		if (count($parent_group_name_arr) > 1) {
 			// Parent group also has parent
-			$this->add_parent($host_groups, $fake_group_id, $parent_group_name);
+			$this->add_parent($host_groups, $fake_group_id, $parent_group_name, $filter);
+		}
+		if ($filter['sort'] == 'name') {
+			$filter['sortorder'] == 'ASC' ? sort($host_groups[$parent_group_name]['children']) : rsort($host_groups[$parent_group_name]['children']);
+		} else {
+			sort($host_groups[$parent_group_name]['children']);
 		}
 	}
 
