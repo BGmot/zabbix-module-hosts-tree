@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2021-08-20
+### Changed
+- Alphabetically arranged groups in the tree branches
+- Add space between the group name and the host number
+
 ## [1.1.0] - 2021-08-15
 ### Added
 - show number of hosts in groups and subgroups
