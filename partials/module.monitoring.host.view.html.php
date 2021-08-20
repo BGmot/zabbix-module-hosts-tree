@@ -239,7 +239,7 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 
 	$group_name_arr = explode('/', $group_name);
 	$group_name_short = end($group_name_arr) .
-			'(' . $my_stat['hosts_count']. ')';
+			'&nbsp;(' . $my_stat['hosts_count']. ')';
 
 	$group_problems_div = (new CDiv())->addClass(ZBX_STYLE_PROBLEM_ICON_LIST);
 
