@@ -30,7 +30,6 @@
 	var groups = [];
 	var data = <?php
 		echo '{';
-
 		foreach ($data['host_groups'] as $group_name => $group) {
 			if (count($group['children']) > 0) {
 				echo "'".$group['groupid']."':[";
@@ -40,11 +39,13 @@
 		}
 		echo '}';
 		function print_children($data, $group) {
-			foreach($group['children'] as $index => $child_group) {
-				$child_group_id = $data['host_groups'][$child_group]['groupid'];
+			$num_of_children = count($group['children']);
+			foreach($group['children'] as $index => $child_group_name) {
+				$child_group_id = $data['host_groups'][$child_group_name]['groupid'];
 				echo "'" . $child_group_id . "'";
-				echo ',';
-				print_children($data, $data['host_groups'][$child_group]);
+				if ($index < $num_of_children-1) {
+					echo ',';
+				}
 			}
 		} ?>;
 

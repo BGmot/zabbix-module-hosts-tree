@@ -32,7 +32,7 @@ $table->setHeader([
 	(new CColHeader(_('Availability'))),
 	(new CColHeader(_('Tags'))),
 	// Fix: problems renamed to triggers to distinguish from the problems counter column
-	(new CColHeader(_('Triggers'))),
+	(new CColHeader(_('Problems'))),
 	make_sorting_header(_('Status'), 'status', $data['sort'], $data['sortorder'], $view_url),
 	(new CColHeader(_('Latest data'))),
 	(new CColHeader(_('Problems'))),
@@ -41,16 +41,14 @@ $table->setHeader([
 	(new CColHeader(_('Web')))
 ]);
 
-
 foreach ($data['host_groups'] as $group_name => $group) {
 	if ($group['parent_group_name'] == '') {
 		// Add only top level groups, children will be added recursively in addGroupRow()
-
-		$child_stat = array('hosts_count'=>0, 'groups_count'=>0, 'severity'=>[]);
+		//$child_stat = array(/*+++'hosts_count'=>0, 'groups_count'.' parent='.$group['parent_group_name']=>0,*/ 'severity'=>[]);
 		$rows = [];
 		addGroupRow($data, $rows, $group_name, '', 0, $child_stat);
 
-		foreach ($rows as $idx=>$row) {
+		foreach ($rows as $row) {
 			$table->addRow($row);
 		}
 	}
@@ -60,19 +58,9 @@ $form->addItem([$table,	$data['paging']]);
 
 echo $form;
 
-// Added child stat as a parameter to display group's totals
-// child stat is a severeties and total count array
-// it's expected that function will return stats as summ of both of its subgroups and own hosts
-// to recursively count the numbers
-
-// Also, due to group and host counting is done during recursive calls and we need
-// group summary information before renedering the group and its subgroups and
-// hosts, so the function saves generatied rows to an intermediate array
-// and then after having summaries, the array is copied to a "global" array
-// which is rendered to the table in level 0
+// Adds one Group to the table (recursively calls itself for all sub-groups)
 function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$child_stat) {
 	$interface_types = [INTERFACE_TYPE_AGENT, INTERFACE_TYPE_SNMP, INTERFACE_TYPE_JMX, INTERFACE_TYPE_IPMI];
-	$my_stat = array('hosts_count'=>0, 'groups_count'=>0, 'severity'=>[]);
 
 	$group = $data['host_groups'][$group_name];
 
@@ -105,8 +93,6 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 			if (($count > 0 && $data['filter']['severities'] && in_array($severity, $data['filter']['severities']))
 					|| (!$data['filter']['severities'] && $count > 0)) {
 				$total_problem_count += $count;
-				isset ($my_stat['severity'][$severity]) ? $my_stat['severity'][$severity] += $count:
-											  $my_stat['severity'][$severity] = $count;
 
 				$problems_div->addItem((new CSpan($count))
 					->addClass(ZBX_STYLE_PROBLEM_ICON_LIST_ITEM)
@@ -135,7 +121,7 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 		$table_row_host = new CRow([
 			(new CCol())
 				//added a little bit of span to make the leveling prettier
-				-> addItem(str_repeat('&nbsp;', 10 + $level*5))
+				-> addItem(str_repeat('&nbsp;', 6 + $level*5))
 				-> addItem($host_name)
 				-> addItem($maintenance_icon),
 			//[$host_name, $maintenance_icon],
@@ -225,34 +211,21 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 		$data['host_groups'][$group_name]['groupid']
 	);
 
-	// Counting hosts/groups totals
-	$hosts_count = count($data['host_groups'][$group_name]['hosts']);
-	$groups_count = count($data['host_groups'][$group_name]['hosts']);
-
-	isset($my_stat['hosts_count'])
-		? $my_stat['hosts_count'] += $hosts_count
-		: $my_stat['hosts_count'] = $hosts_count;
-
-	isset($my_stat['groups_count'])
-		? $my_stat['groups_count'] += $groups_count
-		: $my_stat['groups_count'] = $groups_count;
-
 	$group_name_arr = explode('/', $group_name);
 	$group_name_short = end($group_name_arr) .
-			'&nbsp;(' . $my_stat['hosts_count']. ')';
+			'&nbsp;(' . $data['host_groups'][$group_name]['num_of_hosts']. ')';
 
 	$group_problems_div = (new CDiv())->addClass(ZBX_STYLE_PROBLEM_ICON_LIST);
 
-	// Now we have all the stats, genarating own row
-	// to make things look nice making a sorted severities array
-	krsort($my_stat['severity']);
-
-	foreach ($my_stat['severity'] as $severity => $count) {
-		$group_problems_div->addItem((new CSpan($count))
-			->addClass(ZBX_STYLE_PROBLEM_ICON_LIST_ITEM)
-			->addClass(getSeverityStatusStyle($severity))
-			->setAttribute('title', getSeverityName($severity))
-		);
+	foreach ($data['host_groups'][$group_name]['problem_count'] as $severity => $count) {
+		if (($count > 0 && $data['filter']['severities'] && in_array($severity, $data['filter']['severities']))
+				|| (!$data['filter']['severities'] && $count > 0)) {
+			$group_problems_div->addItem((new CSpan($count))
+				->addClass(ZBX_STYLE_PROBLEM_ICON_LIST_ITEM)
+				->addClass(getSeverityStatusStyle($severity))
+				->setAttribute('title', getSeverityName($severity))
+			);
+		}
 	}
 
 	$table_row = new CRow([
@@ -261,9 +234,9 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 			-> addItem(str_repeat('&nbsp;', $level*5))
 			-> addItem($toggle_tag)
 			-> addItem(bold($group_name_short)),
-			$group_problems_div,
+		$group_problems_div,
 		(new CCol())
-			-> setColSpan(7)
+			-> setColSpan(6)
 	]);
 
 	// We don't render here, but just add rows to the array
@@ -280,15 +253,6 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 	foreach ($host_rows as $idx=>$row) {
 		$rows[] = $row;
 	}
-
-	//adding own statistics to the $child_stat
-	foreach ($my_stat['severity'] as $severity => $count) {
-		isset($child_stat['severity'][$severity])
-				? $child_stat['severity'][$severity] += $count
-				: $child_stat['severity'][$severity] = $count;
-	}
-
-	$child_stat['hosts_count'] += $my_stat['hosts_count'];
 }
 
 // Adds class 'data-group_id_<group_id>=<group_id>' to $element

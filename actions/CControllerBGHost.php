@@ -28,9 +28,6 @@ use CArrayHelper;
 use CUrl;
 use CPagerHelper;
 
-/**
- * Base controller for the "Monitoring->Hosts" page and the "Monitoring->Hosts" asynchronous refresh page.
- */
 abstract class CControllerBGHost extends CController {
 
 	// Filter idx prefix.
@@ -147,18 +144,59 @@ abstract class CControllerBGHost extends CController {
 					? null
 					: HOST_MAINTENANCE_STATUS_OFF
 			],
+                        'selectGroups' => ['name'],
 			'sortfield' => 'name',
 			'limit' => $limit,
 			'preservekeys' => true
 		]);
 
-		// Sort for paging so we know which IDs go to which page.
-		CArrayHelper::sort($hosts, [['field' => $filter['sort'], 'order' => $filter['sortorder']]]);
+		$host_groups = []; // Information about all groups to build a tree
+		$fake_group_id = 100000;
+
+		foreach ($hosts as &$host) {
+			foreach ($host['groups'] as $group) {
+				$groupid = $group['groupid'];
+				$groupname_full = $group['name'];
+				if (!array_key_exists($groupname_full, $host_groups)) {
+					$host_groups[$groupname_full] = [
+						'groupid' => $groupid,
+						'hosts' => [
+							$host['hostid']
+						],
+						'children' => [],
+						'parent_group_name' => '',
+						'num_of_hosts' => 1,
+						'problem_count' => [],
+						'is_collapsed' => true
+					];
+					for ($severity = TRIGGER_SEVERITY_COUNT - 1; $severity >= TRIGGER_SEVERITY_NOT_CLASSIFIED; $severity--) {
+						$host_groups[$groupname_full]['problem_count'][$severity] = 0;
+					}
+				} else {
+					$host_groups[$groupname_full]['hosts'][] = $host['hostid'];
+					$host_groups[$groupname_full]['num_of_hosts']++;
+				}
+
+				$grp_arr = explode('/', $groupname_full);
+				if (count($grp_arr) > 1) {
+					// Find all parent groups and create respective array elements in $host_groups
+					$this->add_parent($host_groups, $fake_group_id, $groupname_full, $filter);
+				}
+			}
+		}
+		unset($host);
+
+		$filter['sortorder'] == 'ASC' ? ksort($host_groups) : krsort($host_groups);
+
+		$hosts_sorted_by_group = [];
+		foreach ($host_groups as $host_group_name => $host_group) {
+			$this->add_hosts_of_child_group($hosts_sorted_by_group, $hosts, $host_groups, $host_group_name, $filter);
+		}
 
 		$view_curl = (new CUrl())->setArgument('action', 'bghost.view');
 
 		// Split result array and create paging.
-		$paging = CPagerHelper::paginate($filter['page'], $hosts, $filter['sortorder'], $view_curl);
+		$paging = CPagerHelper::paginate($filter['page'], $hosts_sorted_by_group, $filter['sortorder'], $view_curl);
 
 		// Get additional data to limited host amount.
 		$hosts = API::Host()->get([
@@ -168,12 +206,57 @@ abstract class CControllerBGHost extends CController {
 			'selectHttpTests' => API_OUTPUT_COUNT,
 			'selectTags' => ['tag', 'value'],
 			'selectInheritedTags' => ['tag', 'value'],
-                        'selectGroups' => ['name'],
-			'hostids' => array_keys($hosts),
+			'hostids' => array_keys($hosts_sorted_by_group),
 			'preservekeys' => true
 		]);
-		// Re-sort the results again.
-		CArrayHelper::sort($hosts, [['field' => $filter['sort'], 'order' => $filter['sortorder']]]);
+
+		// Get only those groups that need to be shown
+		$host_groups_to_show = [];
+		foreach ($hosts_sorted_by_group as $host) {
+			foreach ($host['groups'] as $group) {
+				if (!array_key_exists($group['name'], $host_groups_to_show)) {
+					$host_groups_to_show[$group['name']] = $host_groups[$group['name']];
+					$host_groups_to_show[$group['name']]['hosts'] = [ $host['hostid'] ];
+					// Make sure parent group exists as well
+					$grp_arr = explode('/', $group['name']);
+					for ($i = 1, $g_name = $grp_arr[0]; $i < count($grp_arr); $i++) {
+						if (!array_key_exists($g_name, $host_groups_to_show)) {
+							$host_groups_to_show[$g_name] = $host_groups[$g_name];
+							$host_groups_to_show[$g_name]['hosts'] = [];
+						}
+						$g_name = $g_name.'/'.$grp_arr[$i];
+					}
+				} else {
+					$host_groups_to_show[$group['name']]['hosts'][] = $host['hostid'];
+				}
+			}
+		}
+		// Remove groups that are not to be shown from 'children' groups list
+		foreach ($host_groups_to_show as $group_name => &$group) {
+			$groups_to_delete = [];
+			foreach ($group['children'] as $child_group_name) {
+				if (!array_key_exists($child_group_name, $host_groups_to_show)) {
+					$groups_to_delete[] = $child_group_name;
+				}
+			}
+			foreach ($groups_to_delete as $group_name) {
+				if (($key = array_search($group_name, $group['children'])) !== false) {
+				    unset($group['children'][$key]);
+				}
+			}
+		}
+		unset($group);
+
+		$filter['sortorder'] == 'ASC' ? ksort($host_groups_to_show) : krsort($host_groups_to_show);
+
+		// Some hosts for shown groups can be on other pages thus not in $hosts_sorted_by_group
+		// as we already applied paging. To calculate number of problems we need all hosts belonging to shown groups
+		$all_hosts_in_groups_to_show = [];
+		foreach ($host_groups_to_show as $group_name => $group) {
+			foreach ($host_groups[$group_name]['hosts'] as $host) {
+				$all_hosts_in_groups_to_show[] = $host;
+			}
+		}
 
 		$maintenanceids = [];
 
@@ -181,7 +264,7 @@ abstract class CControllerBGHost extends CController {
 		$triggers = API::Trigger()->get([
 			'output' => [],
 			'selectHosts' => ['hostid'],
-			'hostids' => array_keys($hosts),
+			'hostids' => $all_hosts_in_groups_to_show,
 			'skipDependent' => true,
 			'monitored' => true,
 			'preservekeys' => true
@@ -203,8 +286,31 @@ abstract class CControllerBGHost extends CController {
 			}
 		}
 
-		$host_groups = []; // Information about all groups to build a tree
-		$fake_group_id = 10000;
+		// Count problems for each shown group - take into account only hosts belonging to each group (no parents/children)
+		foreach ($host_groups_to_show as $group_name => &$group) {
+			foreach($host_groups[$group_name]['hosts'] as $hostid) {
+				// Count the number of problems (as value) per severity (as key).
+				for ($severity = TRIGGER_SEVERITY_COUNT - 1; $severity >= TRIGGER_SEVERITY_NOT_CLASSIFIED; $severity--) {
+					// Fill empty arrays for hosts without problems.
+					if (array_key_exists($hostid, $host_problems)) {
+						if (array_key_exists($severity, $host_problems[$hostid])) {
+							$group['problem_count'][$severity] += count($host_problems[$hostid][$severity]);
+
+							// Increment problems count in parent groups
+							$grp_arr = explode('/', $group_name);
+							for ($i = count($grp_arr)-1, $g_name_child = $group_name; $i > 0; $i--) {
+								array_pop($grp_arr);
+								$g_name_parent = implode('/', $grp_arr);
+								$host_groups_to_show[$g_name_parent]['problem_count'][$severity] +=
+									count($host_problems[$hostid][$severity]);
+								$g_name_child = $g_name_parent;
+							}
+						}
+					}
+				}
+			}
+		}
+		unset($group);
 
 		foreach ($hosts as &$host) {
 			// Count number of dashboards for each host.
@@ -252,29 +358,6 @@ abstract class CControllerBGHost extends CController {
 
 			$host['tags'] = $tags;
 
-			foreach ($host['groups'] as $group) {
-				$groupid = $group['groupid'];
-                                $groupname_full = $group['name'];
-				if (!array_key_exists($groupname_full, $host_groups)) {
-					$host_groups[$groupname_full] = [
-						'groupid' => $groupid,
-						'hosts' => [
-							$host['hostid']
-						],
-						'children' => [],
-						'parent_group_name' => '',
-						'is_collapsed' => true
-					];
-				} else {
-					$host_groups[$groupname_full]['hosts'][] = $host['hostid'];
-				}
-
-				$grp_arr = explode('/', $groupname_full);
-				if (count($grp_arr) > 1) {
-					// Find all parent groups
-					$this->add_parent($host_groups, $fake_group_id, $groupname_full, $filter);
-				}
-			}
 		}
 		unset($host);
 
@@ -298,9 +381,63 @@ abstract class CControllerBGHost extends CController {
 		return [
 			'paging' => $paging,
 			'hosts' => $hosts,
-                        'host_groups' => $host_groups,
+                        'host_groups' => $host_groups_to_show,
 			'maintenances' => $maintenances
 		];
+	}
+
+	// Adds all hosts belonging to $host_group_name to global array $hosts_sorted_by_group
+	protected function add_hosts_of_child_group(&$hosts_sorted_by_group, $hosts, $host_groups, $host_group_name, $filter) {
+		// First add all the hosts belonging to this group
+		$hosts_to_add = [];
+		foreach($host_groups[$host_group_name]['hosts'] as $hostid) {
+			$hosts_to_add[$hostid] = $hosts[$hostid];
+		}
+		$hosts_to_add = $this->array_sort($hosts_to_add, 'name', $filter['sortorder']);
+		foreach($hosts_to_add as $hostid => $host){
+			$hosts_sorted_by_group[$hostid] = $host;
+		}
+		// Add all hosts of children groups
+		if (count($host_groups[$host_group_name]['children']) > 0) {
+			foreach($host_groups[$host_group_name]['children'] as $child_group_name){
+				$this->add_hosts_of_child_group($hosts_sorted_by_group, $hosts, $host_groups, $child_group_name, $filter);
+			}
+		}
+	}
+
+	protected function array_sort($array, $on, $order='ASC')
+	{
+		$new_array = array();
+		$sortable_array = array();
+
+		if (count($array) > 0) {
+			foreach ($array as $k => $v) {
+				if (is_array($v)) {
+					foreach ($v as $k2 => $v2) {
+						if ($k2 == $on) {
+							$sortable_array[$k] = $v2;
+						}
+					}
+				} else {
+					$sortable_array[$k] = $v;
+				}
+			}
+
+			switch ($order) {
+				case 'ASC':
+					asort($sortable_array, SORT_STRING);
+					break;
+				case 'DESC':
+					arsort($sortable_array, SORT_STRING);
+					break;
+			}
+
+			foreach ($sortable_array as $k => $v) {
+				$new_array[$k] = $array[$k];
+			}
+		}
+
+		return $new_array;
 	}
 
 	/**
@@ -325,32 +462,21 @@ abstract class CControllerBGHost extends CController {
 			if (!in_array($groupname_full, $host_groups[$parent_group_name]['children'])) {
 				$host_groups[$parent_group_name]['children'][] = $groupname_full;
 			}
+			$host_groups[$parent_group_name]['num_of_hosts']++;
 		} else {
 			// Parent group does not exist or does not have any hosts to show
-			$grps = API::HostGroup()->get([
-				'output' => ['groupid'],
-				'search' => ['name' => $parent_group_name],
-				'filter' => ['name' => $parent_group_name]
-			]);
-			if (count($grps) > 0) {
-				// Group exists in DB
-				$host_groups[$parent_group_name] = [
-					'groupid' => $grps[0]['groupid'],
-					'hosts' => [],
-					'children' => [$groupname_full],
-					'parent_group_name' => '',
-					'is_collapsed' => true
-				];
-			} else {
-				// Group does not exist in DB
-				$host_groups[$parent_group_name] = [
-					'groupid' => $fake_group_id++,
-					'hosts' => [],
-					'children' => [$groupname_full],
-					'parent_group_name' => '',
-					'is_collapsed' => true
-				];
-				}
+			$host_groups[$parent_group_name] = [
+				'groupid' => $fake_group_id++,
+				'hosts' => [],
+				'children' => [$groupname_full],
+				'parent_group_name' => '',
+				'num_of_hosts' => 1,
+				'problem_count' => [],
+				'is_collapsed' => true
+			];
+			for ($severity = TRIGGER_SEVERITY_COUNT - 1; $severity >= TRIGGER_SEVERITY_NOT_CLASSIFIED; $severity--) {
+				$host_groups[$parent_group_name]['problem_count'][$severity] = 0;
+			}
 		}
 		$host_groups[$groupname_full]['parent_group_name'] = $parent_group_name;
 		$parent_group_name_arr = explode('/', $parent_group_name);
@@ -358,11 +484,8 @@ abstract class CControllerBGHost extends CController {
 			// Parent group also has parent
 			$this->add_parent($host_groups, $fake_group_id, $parent_group_name, $filter);
 		}
-		if ($filter['sort'] == 'name') {
-			$filter['sortorder'] == 'ASC' ? sort($host_groups[$parent_group_name]['children']) : rsort($host_groups[$parent_group_name]['children']);
-		} else {
-			sort($host_groups[$parent_group_name]['children']);
-		}
+		// Sort group names
+		$filter['sortorder'] == 'ASC' ? sort($host_groups[$parent_group_name]['children']) : rsort($host_groups[$parent_group_name]['children']);
 	}
 
 	/**

@@ -36,26 +36,26 @@ class CControllerBGHostView extends CControllerBGHost {
 
 	protected function checkInput(): bool {
 		$fields = [
-			'name' =>					'string',
-			'groupids' =>				'array_id',
-			'ip' =>						'string',
-			'dns' =>					'string',
-			'port' =>					'string',
-			'status' =>					'in -1,'.HOST_STATUS_MONITORED.','.HOST_STATUS_NOT_MONITORED,
-			'evaltype' =>				'in '.TAG_EVAL_TYPE_AND_OR.','.TAG_EVAL_TYPE_OR,
-			'tags' =>					'array',
-			'severities' =>				'array',
+			'name' =>			'string',
+			'groupids' =>			'array_id',
+			'ip' =>				'string',
+			'dns' =>			'string',
+			'port' =>			'string',
+			'status' =>			'in -1,'.HOST_STATUS_MONITORED.','.HOST_STATUS_NOT_MONITORED,
+			'evaltype' =>			'in '.TAG_EVAL_TYPE_AND_OR.','.TAG_EVAL_TYPE_OR,
+			'tags' =>			'array',
+			'severities' =>			'array',
 			'show_suppressed' =>		'in '.ZBX_PROBLEM_SUPPRESSED_FALSE.','.ZBX_PROBLEM_SUPPRESSED_TRUE,
 			'maintenance_status' =>		'in '.HOST_MAINTENANCE_STATUS_OFF.','.HOST_MAINTENANCE_STATUS_ON,
-			'sort' =>					'in name,status',
-			'sortorder' =>				'in '.ZBX_SORT_UP.','.ZBX_SORT_DOWN,
-			'page' =>					'ge 1',
-			'filter_name' =>			'string',
+			'sort' =>			'in name,status',
+			'sortorder' =>			'in '.ZBX_SORT_UP.','.ZBX_SORT_DOWN,
+			'page' =>			'ge 1',
+			'filter_name' =>		'string',
 			'filter_custom_time' =>		'in 1,0',
 			'filter_show_counter' =>	'in 1,0',
 			'filter_counters' =>		'in 1',
-			'filter_reset' =>			'in 1',
-			'counter_index' =>			'ge 0'
+			'filter_reset' =>		'in 1',
+			'counter_index' =>		'ge 0'
 		];
 
 		$ret = $this->validateInput($fields);
