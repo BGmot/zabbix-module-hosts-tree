@@ -40,12 +40,16 @@
 		echo '}';
 		function print_children($data, $group) {
 			$num_of_children = count($group['children']);
-			foreach($group['children'] as $index => $child_group_name) {
+			$index = 0;
+			foreach($group['children'] as $child_group_name) {
 				$child_group_id = $data['host_groups'][$child_group_name]['groupid'];
+
 				echo "'" . $child_group_id . "'";
 				if ($index < $num_of_children-1) {
 					echo ',';
 				}
+
+				$index++;
 			}
 		} ?>;
 
