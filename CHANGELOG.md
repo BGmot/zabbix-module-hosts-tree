@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2021-11-12
+### Changed
+- Lots of code re-written
+- All calculations moved from View to Controller
+- Performance improvements (should be noticable when there is a lot of groups)
+- Fix number of hosts and number of problems calculation per group
+- Change the way of presenting Groups with paging (too many hosts belong to one group and to different groups)
+
 ## [1.2.0] - 2021-08-20
 ### Changed
 - Alphabetically arranged groups in the tree branches
