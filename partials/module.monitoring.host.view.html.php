@@ -44,7 +44,6 @@ $table->setHeader([
 foreach ($data['host_groups'] as $group_name => $group) {
 	if ($group['parent_group_name'] == '') {
 		// Add only top level groups, children will be added recursively in addGroupRow()
-		//$child_stat = array(/*+++'hosts_count'=>0, 'groups_count'.' parent='.$group['parent_group_name']=>0,*/ 'severity'=>[]);
 		$rows = [];
 		addGroupRow($data, $rows, $group_name, '', 0, $child_stat);
 
@@ -82,7 +81,12 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 			}
 		}
 
-		$problems_div = (new CDiv())->addClass(ZBX_STYLE_PROBLEM_ICON_LIST);
+		$problems_link = new CLink('', (new CUrl('zabbix.php'))
+			->setArgument('action', 'problem.view')
+			->setArgument('filter_name', '')
+			->setArgument('severities', $data['filter']['severities'])
+			->setArgument('hostids', [$host['hostid']]));
+
 		$total_problem_count = 0;
 
 		// Fill the severity icons by problem count and style, and calculate the total number of problems.
@@ -94,12 +98,19 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 					|| (!$data['filter']['severities'] && $count > 0)) {
 				$total_problem_count += $count;
 
-				$problems_div->addItem((new CSpan($count))
+				$problems_link->addItem((new CSpan($count))
 					->addClass(ZBX_STYLE_PROBLEM_ICON_LIST_ITEM)
-					->addClass(getSeverityStatusStyle($severity))
-					->setAttribute('title', getSeverityName($severity))
+					->addClass(CSeverityHelper::getStatusStyle($severity))
+					->setAttribute('title', CSeverityHelper::getName($severity))
 				);
 			}
+		}
+
+		if ($total_problem_count == 0) {
+			$problems_link->addItem('Problems');
+		}
+		else {
+			$problems_link->addClass(ZBX_STYLE_PROBLEM_ICON_LINK);
 		}
 
 		$maintenance_icon = '';
@@ -128,7 +139,7 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 			(new CCol(getHostInterface($interface)))->addClass(ZBX_STYLE_NOWRAP),
 			getHostAvailabilityTable($host['interfaces']),
 			$host['tags'],
-			$problems_div,
+			$problems_link,
 			($host['status'] == HOST_STATUS_MONITORED)
 				? (new CSpan(_('Enabled')))->addClass(ZBX_STYLE_GREEN)
 				: (new CSpan(_('Disabled')))->addClass(ZBX_STYLE_RED),
@@ -222,8 +233,8 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 				|| (!$data['filter']['severities'] && $count > 0)) {
 			$group_problems_div->addItem((new CSpan($count))
 				->addClass(ZBX_STYLE_PROBLEM_ICON_LIST_ITEM)
-				->addClass(getSeverityStatusStyle($severity))
-				->setAttribute('title', getSeverityName($severity))
+				->addClass(CSeverityHelper::getStatusStyle($severity))
+				->setAttribute('title', CSeverityHelper::getName($severity))
 			);
 		}
 	}

@@ -66,6 +66,13 @@ $widget->addItem((new CForm())->setName('host_view')->addClass('is-loading'));
 $widget->show();
 $this->includeJsFile('monitoring.host.view.js.php', $data);
 
-(new CScriptTag('host_page.start();'))
+(new CScriptTag('
+	view.init('.json_encode([
+		'filter_options' => $data['filter_options'],
+		'refresh_url' => $data['refresh_url'],
+		'refresh_interval' => $data['refresh_interval'],
+		'applied_filter_groupids' => $data['filter_groupids']
+	]).');
+'))
 	->setOnDocumentReady()
 	->show();

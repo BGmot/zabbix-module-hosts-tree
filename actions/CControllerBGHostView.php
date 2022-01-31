@@ -116,6 +116,7 @@ class CControllerBGHostView extends CControllerBGHost {
 			'refresh_interval' => 3600000,
 			'filter_view' => 'monitoring.host.filter',
 			'filter_defaults' => $profile->filter_defaults,
+			'filter_groupids' => $this->getInput('groupids', []),
 			'filter_tabs' => $filter_tabs,
 			'tabfilter_options' => [
 				'idx' => static::FILTER_IDX,
