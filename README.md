@@ -1,7 +1,7 @@
 # zabbix-module-hosts-tree
 Written according to Zabbix official documentation <https://www.zabbix.com/documentation/current/manual/modules>
 
-A Zabbix module to show groups/hosts as a tree under Monitoring -> Hosts Tree menu item in Zabbix version 6.0.
+A Zabbix module to show groups/hosts as a tree under Monitoring -> Hosts Tree menu item in Zabbix version 6.2.
 ![screenshot](screenshots/zabbix-module-hosts-tree-1.png)
 
 # How to use
