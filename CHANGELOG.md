@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2022-07-24
+### Changed
+- Updated to work with Zabbix 6.2.0
+
 ## [2.0.0] - 2022-02-16
 ### Changed
 - Updated to work with Zabbix 6.0.0
