@@ -144,7 +144,7 @@ abstract class CControllerBGHost extends CController {
 					? null
 					: HOST_MAINTENANCE_STATUS_OFF
 			],
-                        'selectGroups' => ['name'],
+                        'selectHostGroups' => ['groupid', 'name'],
 			'sortfield' => 'name',
 			'limit' => $limit,
 			'preservekeys' => true
@@ -154,7 +154,7 @@ abstract class CControllerBGHost extends CController {
 		$fake_group_id = 100000;
 
 		foreach ($hosts as &$host) {
-			foreach ($host['groups'] as $group) {
+			foreach ($host['hostgroups'] as $group) {
 				$groupid = $group['groupid'];
 				$groupname_full = $group['name'];
 				if (!array_key_exists($groupname_full, $host_groups)) {
@@ -213,7 +213,7 @@ abstract class CControllerBGHost extends CController {
 		// Get only those groups that need to be shown
 		$host_groups_to_show = [];
 		foreach ($hosts_sorted_by_group as $host) {
-			foreach ($host['groups'] as $group) {
+			foreach ($host['hostgroups'] as $group) {
 				if (!array_key_exists($group['name'], $host_groups_to_show)) {
 					$host_groups_to_show[$group['name']] = $host_groups[$group['name']];
 					$host_groups_to_show[$group['name']]['hosts'] = [ $host['hostid'] ];
