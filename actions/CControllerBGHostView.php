@@ -31,7 +31,7 @@ use CWebUser;
 class CControllerBGHostView extends CControllerBGHost {
 
 	protected function init(): void {
-		$this->disableSIDValidation();
+		$this->disableCsrfValidation();
 	}
 
 	protected function checkInput(): bool {

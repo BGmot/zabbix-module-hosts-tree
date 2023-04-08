@@ -35,7 +35,7 @@ $this->addJsFile('class.tagfilteritem.js');
 $this->enableLayoutModes();
 $web_layout_mode = $this->getLayoutMode();
 
-$widget = (new CWidget())
+$widget = (new CHtmlPage())
 	->setTitle(_('Hosts'))
 	->setWebLayoutMode($web_layout_mode)
 	->setControls(
