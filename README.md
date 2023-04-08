@@ -6,7 +6,7 @@ A Zabbix module to show groups/hosts as a tree under Monitoring -> Hosts Tree me
 
 IMPORTANT: pick module version according to Zabbix version:
 |Zabbix version | Module version |
-|:-------------:|----------------|
+|:-------------:|:--------------:|
 |    v1.3.0     |     5.4        |
 |    v2.0.0     |     6.0        |
 |    v3.0.0     |     6.2        |
