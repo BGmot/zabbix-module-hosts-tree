@@ -5,12 +5,12 @@ A Zabbix module to show groups/hosts as a tree under Monitoring -> Hosts Tree me
 ![screenshot](screenshots/zabbix-module-hosts-tree-1.png)
 
 IMPORTANT: pick module version according to Zabbix version:
-|Zabbix version | Module version |
-|:-------------:|:--------------:|
-|    v1.3.0     |     5.4        |
-|    v2.0.0     |     6.0        |
-|    v3.0.0     |     6.2        |
-|    v4.0.0     |     6.4        |
+| Module version | Zabbix version |
+|:--------------:|:--------------:|
+|     v1.3.0     |     5.4        |
+|     v2.0.0     |     6.0        |
+|     v3.0.0     |     6.2        |
+|     v4.0.0     |     6.4        |
 
 # How to use
 1) Create a folder in your Zabbix server modules folder (by default /usr/share/zabbix/) and copy contents of this repository into that folder.
