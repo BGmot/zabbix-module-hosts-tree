@@ -129,13 +129,13 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 			}
 		}
 
+		$col1 = new CCol();
+		for($i = 0; $i <= (6 + $level*5); $i++) {
+			$col1 -> addItem(NBSP_BG());
+		}
+		$col1 -> addItem($host_name) -> addItem($maintenance_icon);
 		$table_row_host = new CRow([
-			(new CCol())
-				//added a little bit of span to make the leveling prettier
-				-> addItem(str_repeat('&nbsp;', 6 + $level*5))
-				-> addItem($host_name)
-				-> addItem($maintenance_icon),
-			//[$host_name, $maintenance_icon],
+			$col1,
 			(new CCol(getHostInterface($interface)))->addClass(ZBX_STYLE_NOWRAP),
 			getHostAvailabilityTable($host['interfaces']),
 			$host['tags'],
@@ -223,8 +223,6 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 	);
 
 	$group_name_arr = explode('/', $group_name);
-	$group_name_short = end($group_name_arr) .
-			'&nbsp;(' . $data['host_groups'][$group_name]['num_of_hosts']. ')';
 
 	$group_problems_div = (new CDiv())->addClass(ZBX_STYLE_PROBLEM_ICON_LIST);
 
@@ -239,12 +237,17 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 		}
 	}
 
+	$col2 = (new CCol())
+		-> setColSpan(4);
+        for ($i = 0; $i < $level*5; $i++) {
+		$col2 -> addItem(NBSP_BG());
+	}
+	$col2 -> addItem($toggle_tag);
+	$col2 -> addItem(bold(end($group_name_arr)));
+	$col2 -> addItem(NBSP_BG());
+	$col2 -> addItem(bold('(' . $data['host_groups'][$group_name]['num_of_hosts']. ')'));
 	$table_row = new CRow([
-		(new CCol())
-			-> setColSpan(4)
-			-> addItem(str_repeat('&nbsp;', $level*5))
-			-> addItem($toggle_tag)
-			-> addItem(bold($group_name_short)),
+		$col2,
 		$group_problems_div,
 		(new CCol())
 			-> setColSpan(6)
@@ -275,5 +278,19 @@ function addParentGroupClass($data, &$element, $parent_group_name) {
 			'data-group_id_'.$data['host_groups'][$parent_group_name]['groupid'],
 			$data['host_groups'][$parent_group_name]['groupid']
 		);
+	}
+}
+
+function NBSP_BG() {
+	return new CHtmlEntityBG('&nbsp;');
+}
+
+class CHtmlEntityBG {
+	private $entity = '';
+	public function __construct(string $entity) {
+		$this->entity = $entity;
+	}
+	public function toString(): string {
+		return $this->entity;
 	}
 }
