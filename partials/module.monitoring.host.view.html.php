@@ -272,8 +272,6 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 // Adds class 'data-group_id_<group_id>=<group_id>' to $element
 function addParentGroupClass($data, &$element, $parent_group_name) {
 	if ($parent_group_name != '') {
-		// Do not add the class to top level groups, we don't need to hide them ever
-		$element->addClass(ZBX_STYLE_DISPLAY_NONE);
 		$element->setAttribute(
 			'data-group_id_'.$data['host_groups'][$parent_group_name]['groupid'],
 			$data['host_groups'][$parent_group_name]['groupid']
