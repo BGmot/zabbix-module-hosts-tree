@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] - 2023-06-08
+### Changed
+- Show group tree expanded at first load
+- Fixed bug with showing &nbsp; in browser for Zabbix >= 6.4.3
+
 ## [4.0.0] - 2023-04-08
 ### Changed
 - Updated to work with Zabbix 6.4

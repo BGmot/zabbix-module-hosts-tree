@@ -167,7 +167,7 @@ abstract class CControllerBGHost extends CController {
 						'parent_group_name' => '',
 						'num_of_hosts' => 1,
 						'problem_count' => [],
-						'is_collapsed' => true
+						'is_collapsed' => false
 					];
 					for ($severity = TRIGGER_SEVERITY_COUNT - 1; $severity >= TRIGGER_SEVERITY_NOT_CLASSIFIED; $severity--) {
 						$host_groups[$groupname_full]['problem_count'][$severity] = 0;
@@ -472,7 +472,7 @@ abstract class CControllerBGHost extends CController {
 				'parent_group_name' => '',
 				'num_of_hosts' => 1,
 				'problem_count' => [],
-				'is_collapsed' => true
+				'is_collapsed' => false
 			];
 			for ($severity = TRIGGER_SEVERITY_COUNT - 1; $severity >= TRIGGER_SEVERITY_NOT_CLASSIFIED; $severity--) {
 				$host_groups[$parent_group_name]['problem_count'][$severity] = 0;
