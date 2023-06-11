@@ -86,11 +86,19 @@
 		toggleGroup(group_id, collapsed);
 		if (collapsed) {
 			if (group_id in data) {
-				// Collapse all child groups
-				for (var i = 0; i < data[group_id].length; i++) {
-					toggleGroup(data[group_id][i], true);
-				}
+				collapseSubgroup(group_id);
 			}
 		}
 	});
+
+	function collapseSubgroup(group_id) {
+		toggleGroup(group_id, true);
+		for (var i = 0; i < data[group_id].length; i++) {
+			if (data[group_id][i] in data) {
+				collapseSubgroup(data[group_id][i]);
+			} else {
+				toggleGroup(data[group_id][i], true);
+			}
+		}
+	}
 </script>
