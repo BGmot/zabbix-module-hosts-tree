@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.1] - 2023-06-11
+### Changed
+- Fixed bug with hiding childeren groups at all levels.
+
 ## [4.1.0] - 2023-06-08
 ### Changed
 - Show group tree expanded at first load
