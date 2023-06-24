@@ -8,7 +8,7 @@ IMPORTANT: pick module version according to Zabbix version:
 | Module version | Zabbix version |
 |:--------------:|:--------------:|
 |     v1.3.0     |     5.4        |
-|     v2.0.0     |     6.0        |
+|     v2.0.1     |     6.0        |
 |     v3.0.0     |     6.2        |
 |     v4.1.1     |     6.4        |
 
