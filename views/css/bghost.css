@@ -1,0 +1,23 @@
+.treeview {
+  display: inline-block;
+  width: 14px;
+  height: 16px;
+  min-height: auto;
+  line-height: 16px;
+  padding: 0;
+  margin: 0 2px 0 0;
+  cursor: auto;
+  text-align: center;
+  border: 0;
+  background-color: transparent; }
+  .treeview .arrow-right {
+    border-left-color: #768d99; }
+  .treeview .arrow-down {
+    margin: 0 0 2px;
+    border-top-color: #768d99; }
+  .treeview:hover, .treeview:focus {
+    background-color: transparent; }
+    .treeview:hover .arrow-right, .treeview:focus .arrow-right {
+      border-left-color: #0275b8; }
+    .treeview:hover .arrow-down, .treeview:focus .arrow-down {
+      border-top-color: #0275b8; }

@@ -65,6 +65,7 @@ else {
 $widget->addItem((new CForm())->setName('host_view')->addClass('is-loading'));
 $widget->show();
 $this->includeJsFile('monitoring.host.view.js.php', $data);
+$this->addCssFile('modules/zabbix-module-hosts-tree/views/css/bghost.css');
 
 (new CScriptTag('
 	view.init('.json_encode([
