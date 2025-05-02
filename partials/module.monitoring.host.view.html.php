@@ -70,6 +70,9 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 
 		$interface = null;
 		if ($host['interfaces']) {
+                        foreach ($host['interfaces'] as $index => $value) {
+                            $host['interfaces'][$index]['has_enabled_items'] = true;
+                        }
 			foreach ($interface_types as $interface_type) {
 				$host_interfaces = array_filter($host['interfaces'], function(array $host_interface) use ($interface_type) {
 					return ($host_interface['type'] == $interface_type);
