@@ -27,6 +27,7 @@ use CRoleHelper;
 use CTabFilterProfile;
 use CUrl;
 use CWebUser;
+use CCsrfTokenHelper;
 
 class CControllerBGHostView extends CControllerBGHost {
 
@@ -93,9 +94,14 @@ class CControllerBGHostView extends CControllerBGHost {
 
 	protected function doAction(): void {
 		$filter_tabs = [];
-		$profile = (new CTabFilterProfile(static::FILTER_IDX, static::FILTER_FIELDS_DEFAULT))
-			->read()
-			->setInput($this->cleanInput($this->getInputAll()));
+		$profile = (new CTabFilterProfile(static::FILTER_IDX, static::FILTER_FIELDS_DEFAULT))->read();
+
+		if ($this->hasInput('filter_reset')) {
+			$profile->reset();
+		}
+		else {
+			$profile->setInput($this->cleanInput($this->getInputAll()));
+		}
 
 		foreach ($profile->getTabsWithDefaults() as $index => $filter_tab) {
 			if ($index == $profile->selected) {
@@ -107,6 +113,8 @@ class CControllerBGHostView extends CControllerBGHost {
 		}
 
 		$filter = $filter_tabs[$profile->selected];
+		$filter = self::sanitizeFilter($filter);
+
 		$refresh_curl = new CUrl('zabbix.php');
 		$filter['action'] = 'bghost.view.refresh';
 		array_map([$refresh_curl, 'setArgument'], array_keys($filter), $filter);
@@ -118,14 +126,16 @@ class CControllerBGHostView extends CControllerBGHost {
 			'filter_defaults' => $profile->filter_defaults,
 			'filter_groupids' => $this->getInput('groupids', []),
 			'filter_tabs' => $filter_tabs,
+			'can_create_hosts' => $this->checkAccess(CRoleHelper::UI_CONFIGURATION_HOSTS),
 			'tabfilter_options' => [
 				'idx' => static::FILTER_IDX,
 				'selected' => $profile->selected,
 				'support_custom_time' => 0,
 				'expanded' => $profile->expanded,
-				'page' => $filter['page']
+				'page' => $filter['page'],
+				'csrf_token' => CCsrfTokenHelper::get('tabfilter')
 			]
-		] + $this->getData($filter);
+		];
 
 		$response = new CControllerResponseData($data);
 		$response->setTitle(_('Hosts'));

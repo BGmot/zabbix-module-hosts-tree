@@ -40,15 +40,17 @@
 		_popup_message_box: null,
 
 		init({filter_options, refresh_url, refresh_interval, applied_filter_groupids}) {
-			this.refresh_url = new Curl(refresh_url, false);
+			this.refresh_url = new Curl(refresh_url);
 			this.refresh_interval = refresh_interval;
 			this.applied_filter_groupids = applied_filter_groupids;
 
-			const url = new Curl('zabbix.php', false);
+			const url = new Curl('zabbix.php');
 			url.setArgument('action', 'bghost.view.refresh');
 			this.refresh_simple_url = url.getUrl();
 
 			this.initTabFilter(filter_options);
+			this.initEvents();
+			this.initPopupListeners();
 
 			this.host_view_form = $('form[name=host_view]');
 			this.running = true;
@@ -64,6 +66,48 @@
 			this.filter = new CTabFilter($('#monitoring_hosts_filter')[0], filter_options);
 			this.filter.on(TABFILTER_EVENT_URLSET, () => {
 				this.reloadPartialAndTabCounters();
+			});
+		},
+
+		initEvents() {
+			document.querySelector('.js-create-host')?.addEventListener('click', () => {
+				ZABBIX.PopupManager.open('host.edit', {groupids: this.applied_filter_groupids});
+			});
+		},
+
+		initPopupListeners() {
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_OPEN
+				},
+				callback: () => this.unscheduleRefresh()
+			});
+
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_CANCEL
+				},
+				callback: () => this.scheduleRefresh()
+			});
+
+			ZABBIX.EventHub.subscribe({
+				require: {
+					context: CPopupManager.EVENT_CONTEXT,
+					event: CPopupManagerEvent.EVENT_SUBMIT
+				},
+				callback: ({data, event}) => {
+					event.preventDefault();
+
+					if ('success' in data.submit) {
+						this._addPopupMessage(
+							makeMessageBox('good', data.submit.success.messages, data.submit.success.title)
+						);
+					}
+
+					this.reloadPartialAndTabCounters();
+				}
 			});
 		},
 
@@ -93,7 +137,7 @@
 		},
 
 		reloadPartialAndTabCounters() {
-			this.refresh_url = new Curl('', false);
+			this.refresh_url = new Curl('');
 
 			this.unscheduleRefresh();
 			this.refresh();
@@ -211,7 +255,7 @@
 
 			this.clearLoading();
 
-			const messages = $(jqXHR.responseText).find('.msg-global');
+			const messages = $(jqXHR.responseText).find('.<?= ZBX_STYLE_MSG_GLOBAL ?>');
 
 			if (messages.length) {
 				this.host_view_form.html(messages);

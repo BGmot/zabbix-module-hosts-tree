@@ -20,26 +20,27 @@
 
 $this->includeJsFile('monitoring.host.view.refresh.js.php');
 
-$form = (new CForm())->setName('host_view');
-
-$table = (new CTableInfo());
+$form = (new CForm())
+	->setName('host_view');
 
 $view_url = $data['view_curl']->getUrl();
 
-$table->setHeader([
-	make_sorting_header(_('Name'), 'name', $data['sort'], $data['sortorder'], $view_url),
-	(new CColHeader(_('Interface'))),
-	(new CColHeader(_('Availability'))),
-	(new CColHeader(_('Tags'))),
-	// Fix: problems renamed to triggers to distinguish from the problems counter column
-	(new CColHeader(_('Problems'))),
-	make_sorting_header(_('Status'), 'status', $data['sort'], $data['sortorder'], $view_url),
-	(new CColHeader(_('Latest data'))),
-	(new CColHeader(_('Problems'))),
-	(new CColHeader(_('Graphs'))),
-	(new CColHeader(_('Dashboards'))),
-	(new CColHeader(_('Web')))
-]);
+$table = (new CTableInfo())
+	->setHeader([
+		make_sorting_header(_('Name'), 'name', $data['sort'], $data['sortorder'], $view_url),
+		(new CColHeader(_('Interface'))),
+		(new CColHeader(_('Availability'))),
+		(new CColHeader(_('Tags'))),
+		// Fix: problems renamed to triggers to distinguish from the problems counter column
+		(new CColHeader(_('Problems'))),
+		make_sorting_header(_('Status'), 'status', $data['sort'], $data['sortorder'], $view_url),
+		(new CColHeader(_('Latest data'))),
+		(new CColHeader(_('Problems'))),
+		(new CColHeader(_('Graphs'))),
+		(new CColHeader(_('Dashboards'))),
+		(new CColHeader(_('Web')))
+	])
+	->setPageNavigation($data['paging']);
 
 foreach ($data['host_groups'] as $group_name => $group) {
 	if ($group['parent_group_name'] == '') {
@@ -53,7 +54,7 @@ foreach ($data['host_groups'] as $group_name => $group) {
 	}
 }
 
-$form->addItem([$table,	$data['paging']]);
+$form->addItem($table);
 
 echo $form;
 

@@ -31,6 +31,10 @@ use CUrl;
  */
 class CControllerBGHostViewRefresh extends CControllerBGHostView {
 
+	protected function init(): void {
+		$this->disableCsrfValidation();
+	}
+
 	protected function doAction(): void {
 		$filter = static::FILTER_FIELDS_DEFAULT;
 
@@ -42,6 +46,8 @@ class CControllerBGHostViewRefresh extends CControllerBGHostView {
 			$filter_counters = [];
 
 			foreach ($filters as $index => $tabfilter) {
+				$tabfilter = self::sanitizeFilter($tabfilter);
+
 				$filter_counters[$index] = $tabfilter['filter_show_counter'] ? $this->getCount($tabfilter) : 0;
 			}
 
@@ -54,7 +60,7 @@ class CControllerBGHostViewRefresh extends CControllerBGHostView {
 		else {
 			$this->getInputs($filter, array_keys($filter));
 			$filter = $this->cleanInput($filter);
-			$prepared_data = $this->getData($filter);
+			$filter = self::sanitizeFilter($filter);
 
 			$view_url = (new CUrl())
 				->setArgument('action', 'bghost.view')
@@ -67,7 +73,7 @@ class CControllerBGHostViewRefresh extends CControllerBGHostView {
 				'sortorder' => $filter['sortorder'],
 				'allowed_ui_latest_data' => $this->checkAccess(CRoleHelper::UI_MONITORING_LATEST_DATA),
 				'allowed_ui_problems' => $this->checkAccess(CRoleHelper::UI_MONITORING_PROBLEMS)
-			] + $prepared_data;
+			] + $this->getData($filter);
 
 			$response = new CControllerResponseData($data);
 			$this->setResponse($response);

@@ -20,7 +20,8 @@
 **/
 
 $output = [
-	'body' => (new CPartial('module.monitoring.host.view.html', $data))->getOutput()
+	'body' => (new CPartial('module.monitoring.host.view.html', $data))->getOutput(),
+	'groupids' => $data['filter']['groupids']
 ];
 
 if (($messages = getMessages()) !== null) {
