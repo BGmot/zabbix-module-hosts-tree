@@ -203,6 +203,9 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 				: (new CSpan(_('Web')))->addClass(ZBX_STYLE_DISABLED)
 		]);
 
+                if ($data['host_groups'][$group_name]['is_collapsed'] )
+                    $table_row_host->addClass(ZBX_STYLE_DISPLAY_NONE);
+
 		addParentGroupClass($data, $table_row_host, $group_name);
 		$host_rows[] = $table_row_host;
 	}
@@ -256,6 +259,9 @@ function addGroupRow($data, &$rows, $group_name, $parent_group_name, $level, &$c
 		(new CCol())
 			-> setColSpan(6)
 	]);
+
+        if ($data['host_groups'][$group_name]['is_collapsed'] && $parent_group_name != '')
+            $table_row->addClass(ZBX_STYLE_DISPLAY_NONE);
 
 	// We don't render here, but just add rows to the array
 	addParentGroupClass($data, $table_row, $parent_group_name);
